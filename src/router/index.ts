@@ -1,3 +1,4 @@
+import { useAuthStore } from '@/stores/auth';
 import { createRouter, createWebHistory } from 'vue-router';
 
 const router = createRouter({
@@ -22,10 +23,9 @@ const router = createRouter({
 });
 
 router.beforeEach((to, from, next) => {
-  // 쿠키에 담을꺼야
-  const isSignedIn = false;
+  const authStore = useAuthStore();
 
-  if (!isSignedIn && to.meta.requiresAuth) {
+  if (!authStore.isSignedIn) {
     next({ name: 'SignInView' });
   } else {
     next();
