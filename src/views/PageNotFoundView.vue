@@ -1,9 +1,7 @@
 <script setup lang="ts"></script>
 
 <template>
-  <v-app>
-    <router-view />
-  </v-app>
+  <h1>Page Not Found View</h1>
 </template>
 
 <style scoped></style>
