@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
+
+import authApi from '@/apis/authApi';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
@@ -11,17 +13,7 @@ const password = ref<string>('');
 
 const handleLogin = async () => {
   try {
-    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sign-in`, {
-      method: 'POST',
-      credentials: 'include',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        username: username.value,
-        password: password.value,
-      }),
-    });
+    const response = await authApi.signIn(username.value, password.value);
 
     if (!response.ok) {
       return;

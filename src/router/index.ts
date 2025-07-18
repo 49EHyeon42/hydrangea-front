@@ -1,5 +1,6 @@
-import { useAuthStore } from '@/stores/auth';
 import { createRouter, createWebHistory } from 'vue-router';
+
+import { useAuth } from '@/composables/useAuth';
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -17,24 +18,36 @@ const router = createRouter({
       path: '/chat',
       name: 'ChatView',
       component: () => import('@/views/ChatView.vue'),
+      meta: { requiresAuth: true },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'PageNotFoundView',
       component: () => import('@/views/PageNotFoundView.vue'),
+      meta: { requiresAuth: true },
     },
   ],
 });
 
-router.beforeEach((to, from, next) => {
-  const authStore = useAuthStore();
+router.beforeEach(async (to, from, next) => {
+  const auth = useAuth();
 
-  if (!authStore.isSignedIn && !(to.name === 'SignInView')) {
-    return next({ name: 'SignInView' });
+  if (!to.meta.requiresAuth) {
+    if (to.name === 'SignInView') {
+      const isSignedIn = await auth.isSignedIn();
+
+      if (isSignedIn) {
+        return next({ name: 'ChatView' });
+      }
+    }
+
+    return next();
   }
 
-  if (authStore.isSignedIn && to.name === 'SignInView') {
-    return next({ name: 'ChatView' });
+  const isSignedIn = await auth.isSignedIn();
+
+  if (!isSignedIn) {
+    return next({ name: 'SignInView' });
   }
 
   next();
