@@ -1,28 +1,23 @@
-// TODO: fetch wrapper 구현
+import { fetchWrapper } from './fetchWrapper';
 
 const signIn = async (username: string, password: string): Promise<Response> => {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/sign-in`, {
+  return fetchWrapper('/api/auth/sign-in', {
     method: 'POST',
+    credentials: 'include',
     headers: {
       'Content-Type': 'application/json',
     },
-    credentials: 'include',
-    body: JSON.stringify({
-      username: username,
-      password: password,
-    }),
+    body: {
+      username,
+      password,
+    },
   });
-
-  return response;
 };
 
 const me = async (): Promise<Response> => {
-  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
-    method: 'GET',
+  return fetchWrapper('/api/auth/me', {
     credentials: 'include',
   });
-
-  return response;
 };
 
 export default { signIn, me };
