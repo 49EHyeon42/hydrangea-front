@@ -2,7 +2,15 @@
 import { Client, type IMessage } from '@stomp/stompjs';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
-const messages = ref<string[]>([]);
+import ChatMessage from '@/components/ChatMessage.vue';
+
+interface ChatMessageData {
+  senderNickname: string;
+  content: string;
+}
+
+// NOTE: 나중에 messages 많아져서 무거워지면 어떻게 하지
+const messages = ref<ChatMessageData[]>([]);
 const newMessage = ref('');
 
 let client: Client;
@@ -27,7 +35,10 @@ onMounted(() => {
 
       client.subscribe('/topic/message', (message: IMessage) => {
         const body = JSON.parse(message.body);
-        messages.value.push(`${body.senderNickname}: ${body.content}`);
+        messages.value.push({
+          senderNickname: body.senderNickname,
+          content: body.content,
+        });
       });
     },
     onStompError: (frame) => {
@@ -44,22 +55,32 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div>
-    <h1>ChatView</h1>
-    <div class="chat-box">
-      <div v-for="(msg, index) in messages" :key="index">{{ msg }}</div>
+  <v-container fluid class="d-flex flex-column" style="height: 100vh">
+    <v-sheet class="flex-grow-1 overflow-hidden mb-2" border rounded>
+      <div class="fill-height overflow-y-auto pa-1" style="scrollbar-gutter: stable">
+        <ChatMessage
+          v-for="(message, index) in messages"
+          :key="index"
+          :nickname="message.senderNickname"
+          :content="message.content"
+        />
+      </div>
+    </v-sheet>
+
+    <div class="flex-shrink-0">
+      <v-textarea
+        v-model="newMessage"
+        variant="outlined"
+        density="compact"
+        auto-grow
+        no-resize
+        rows="1"
+        max-rows="3"
+        hide-details
+        @keydown.enter.exact.prevent="sendMessage"
+      />
     </div>
-    <input v-model="newMessage" @keyup.enter="sendMessage" placeholder="Type message..." />
-    <button @click="sendMessage">Send</button>
-  </div>
+  </v-container>
 </template>
 
-<style scoped>
-.chat-box {
-  border: 1px solid #ccc;
-  height: 300px;
-  overflow-y: auto;
-  padding: 8px;
-  margin-bottom: 10px;
-}
-</style>
+<style scoped></style>
