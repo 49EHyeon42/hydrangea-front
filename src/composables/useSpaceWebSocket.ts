@@ -4,7 +4,6 @@ import { ref } from 'vue';
 import type { SendMessageResponse } from '@/types/message/response/SendMessageResponse';
 
 const messages = ref<SendMessageResponse[]>([]);
-const newMessage = ref('');
 
 const client = new Client({
   // brokerURL, reconnectDelay 환경 변수로 분리
@@ -31,24 +30,21 @@ export const useSpaceWebSocket = () => {
     client.deactivate();
   };
 
-  const sendMessage = () => {
-    if (!newMessage.value.trim() || !client.connected) {
+  const sendMessage = (content: string) => {
+    if (!client.connected) {
       return;
     }
 
     client.publish({
       destination: '/app/space/chat',
       body: JSON.stringify({
-        content: newMessage.value,
+        content: content,
       }),
     });
-
-    newMessage.value = '';
   };
 
   return {
     messages,
-    newMessage,
     connect,
     disconnect,
     sendMessage,

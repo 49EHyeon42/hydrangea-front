@@ -15,9 +15,9 @@ const router = createRouter({
       component: () => import('@/views/SignInView.vue'),
     },
     {
-      path: '/chat',
-      name: 'ChatView',
-      component: () => import('@/views/ChatView.vue'),
+      path: '/space',
+      name: 'SpaceView',
+      component: () => import('@/views/SpaceView.vue'),
       meta: { requiresAuth: true },
     },
     {
@@ -33,11 +33,11 @@ router.beforeEach(async (to, from, next) => {
   const auth = useAuth();
 
   if (!to.meta.requiresAuth) {
-    if (to.name === 'SignInView') {
+    if (to.name === 'SpaceView') {
       const isSignedIn = await auth.isSignedIn();
 
       if (isSignedIn) {
-        return next({ name: 'ChatView' });
+        return next({ name: 'SpaceView' });
       }
     }
 

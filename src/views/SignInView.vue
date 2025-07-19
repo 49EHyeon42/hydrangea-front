@@ -21,7 +21,7 @@ const handleLogin = async () => {
 
     authStore.signIn();
 
-    router.push('/chat');
+    router.push('/space');
   } catch (error) {
     console.error(error);
   }

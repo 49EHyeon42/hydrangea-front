@@ -1,18 +1,29 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted } from 'vue';
+import { ref } from 'vue';
 
 import ChatMessage from '@/components/ChatMessage.vue';
-import { useSpaceWebSocket } from '@/composables/useSpaceWebSocket';
 
-const spaceWebSocket = useSpaceWebSocket();
+const props = defineProps<{
+  messages: { senderNickname: string; content: string }[];
+}>();
 
-onMounted(() => {
-  spaceWebSocket.connect();
-});
+const emit = defineEmits<{
+  (e: 'send-message', message: string): void;
+}>();
 
-onBeforeUnmount(() => {
-  spaceWebSocket.disconnect();
-});
+const inputContent = ref('');
+
+// NOTE: 고민, 메시지를 서버에 보내는 것은 HTTP로?
+const sendMessage = async () => {
+  if (!inputContent.value.trim()) {
+    return;
+  }
+
+  emit('send-message', inputContent.value);
+
+  // 주의
+  inputContent.value = '';
+};
 </script>
 
 <template>
@@ -20,7 +31,7 @@ onBeforeUnmount(() => {
     <v-sheet class="flex-grow-1 overflow-hidden mb-2" border rounded>
       <div class="fill-height overflow-y-auto pa-1" style="scrollbar-gutter: stable">
         <ChatMessage
-          v-for="(message, index) in spaceWebSocket.messages.value"
+          v-for="(message, index) in props.messages"
           :key="index"
           :nickname="message.senderNickname"
           :content="message.content"
@@ -30,7 +41,7 @@ onBeforeUnmount(() => {
 
     <div class="flex-shrink-0">
       <v-textarea
-        v-model="spaceWebSocket.newMessage.value"
+        v-model="inputContent"
         variant="outlined"
         density="compact"
         auto-grow
@@ -38,7 +49,7 @@ onBeforeUnmount(() => {
         rows="1"
         max-rows="3"
         hide-details
-        @keydown.enter.exact.prevent="spaceWebSocket.sendMessage"
+        @keydown.enter.exact.prevent="sendMessage"
       />
     </div>
   </div>
