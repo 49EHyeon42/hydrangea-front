@@ -39,7 +39,6 @@ export const useChatWebSocket = () => {
     client.publish({
       destination: '/app/message',
       body: JSON.stringify({
-        senderNickname: '사용자닉네임',
         content: newMessage.value,
       }),
     });
