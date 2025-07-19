@@ -11,7 +11,7 @@ const client = new Client({
   brokerURL: 'ws://localhost:8080/ws',
   reconnectDelay: 5000,
   onConnect: () => {
-    client.subscribe('/topic/message', (message: IMessage) => {
+    client.subscribe('/topic/space/chat', (message: IMessage) => {
       const body = JSON.parse(message.body) as SendMessageResponse;
 
       messages.value.push(body);
@@ -22,7 +22,7 @@ const client = new Client({
   },
 });
 
-export const useChatWebSocket = () => {
+export const useSpaceWebSocket = () => {
   const connect = () => {
     client.activate();
   };
@@ -37,7 +37,7 @@ export const useChatWebSocket = () => {
     }
 
     client.publish({
-      destination: '/app/message',
+      destination: '/app/space/chat',
       body: JSON.stringify({
         content: newMessage.value,
       }),
