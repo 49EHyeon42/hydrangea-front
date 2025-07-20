@@ -21,7 +21,7 @@ onBeforeUnmount(() => {
     <v-row dense class="fill-height">
       <v-col cols="9">
         <div class="d-flex align-center justify-center">
-          <PhaserPanel :players="spaceWebSocket.players.value" @send-move="spaceWebSocket.sendMove" />
+          <PhaserPanel :players="spaceWebSocket.users.value" @send-move="spaceWebSocket.moveUser" />
         </div>
       </v-col>
       <v-col cols="3" class="fill-height">
