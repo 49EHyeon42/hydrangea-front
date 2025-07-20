@@ -7,12 +7,6 @@ import { useSpaceWebSocket } from '@/composables/useSpaceWebSocket';
 
 const spaceWebSocket = useSpaceWebSocket();
 
-const join = () => {
-  console.log('여기2');
-
-  spaceWebSocket.sendJoin();
-};
-
 onMounted(() => {
   spaceWebSocket.connect();
 });
@@ -27,7 +21,7 @@ onBeforeUnmount(() => {
     <v-row dense style="height: 100%">
       <v-col cols="9">
         <div class="d-flex align-center justify-center" style="height: 100%">
-          <PhaserPanel :players="spaceWebSocket.players.value" @send-join="join" @send-move="spaceWebSocket.sendMove" />
+          <PhaserPanel :players="spaceWebSocket.players.value" @send-move="spaceWebSocket.sendMove" />
         </div>
       </v-col>
       <v-col cols="3">

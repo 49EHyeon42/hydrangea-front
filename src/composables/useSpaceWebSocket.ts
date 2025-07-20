@@ -2,13 +2,14 @@ import { Client, type IMessage } from '@stomp/stompjs';
 import { ref } from 'vue';
 
 import type { SendMessageResponse } from '@/types/message/response/SendMessageResponse';
+import type { JoinUserResponse } from '@/types/space/user/JoinUserResponse';
 
-const players = ref<Map<string, Player>>(new Map());
-const myPlayerId = ref<string>('');
+const players = ref<Map<number, Player>>(new Map());
+const myPlayerId = ref<number>(0);
 
 // Player 타입 정의 필요
 interface Player {
-  id: string;
+  id: number;
   x: number;
   y: number;
   username?: string;
@@ -16,6 +17,7 @@ interface Player {
 
 // TODO: 나중에 space(player, chat)으로 분리 필요할 듯
 // TODO: 새로 들어왔을 때, 기존 사용자가 어디에 있는지 모름, 수정 필요
+// TODO: 컴포저블 구조 수정
 
 const messages = ref<SendMessageResponse[]>([]);
 
@@ -24,25 +26,23 @@ const client = new Client({
   brokerURL: 'ws://localhost:8080/ws',
   reconnectDelay: 5000,
   onConnect: () => {
-    client.subscribe('/topic/space/join', (message: IMessage) => {
-      const joinData = JSON.parse(message.body) as {
-        playerId: string;
-        username: string;
-        x: number;
-        y: number;
-      };
+    // 내부 함수로 분리 안되나?
+    client.subscribe('/topic/spaces/users/join', (message: IMessage) => {
+      console.log('누가 접속?');
+
+      const body = JSON.parse(message.body) as JoinUserResponse;
 
       // 자신의 입장이 아닌 경우만 다른 플레이어로 추가
-      if (joinData.playerId !== myPlayerId.value) {
-        players.value.set(joinData.playerId, {
-          id: joinData.playerId,
-          x: joinData.x,
-          y: joinData.y,
-          username: joinData.username,
+      if (body.userId !== myPlayerId.value) {
+        players.value.set(body.userId, {
+          id: body.userId,
+          x: body.initialX,
+          y: body.initialY,
+          username: body.userNickname,
         });
       } else {
         // 자신의 ID 저장
-        myPlayerId.value = joinData.playerId;
+        myPlayerId.value = body.userId;
       }
     });
 
@@ -63,18 +63,20 @@ const client = new Client({
       };
 
       // 자신의 움직임은 무시 (myPlayerId와 비교)
-      if (moveData.playerId === myPlayerId.value) {
+      // 임시 조치
+      if (moveData.playerId === myPlayerId.value.toString()) {
         return;
       }
 
       if (moveData.type === 'move') {
-        const player = players.value.get(moveData.playerId);
+        // 임시 조치
+        const player = players.value.get(Number(moveData.playerId));
         if (player) {
           player.x = moveData.x;
           player.y = moveData.y;
         }
       } else if (moveData.type === 'leave') {
-        players.value.delete(moveData.playerId);
+        players.value.delete(Number(moveData.playerId));
       }
     });
 
@@ -83,7 +85,7 @@ const client = new Client({
     }
 
     client.publish({
-      destination: '/app/space/join',
+      destination: '/app/spaces/users/join',
     });
   },
   onStompError: (frame) => {
@@ -98,22 +100,6 @@ export const useSpaceWebSocket = () => {
 
   const disconnect = () => {
     client.deactivate();
-  };
-
-  // 안쓰는 중
-  const sendJoin = () => {
-    if (!client.connected) {
-      return;
-    }
-
-    client.publish({
-      destination: '/app/space/move',
-      body: JSON.stringify({
-        x: 0,
-        y: 0,
-        type: 'join',
-      }),
-    });
   };
 
   const sendMove = (x: number, y: number) => {
@@ -150,7 +136,6 @@ export const useSpaceWebSocket = () => {
     myPlayerId,
     connect,
     disconnect,
-    sendJoin,
     sendMove,
     sendMessage,
   };

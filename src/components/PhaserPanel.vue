@@ -3,18 +3,17 @@ import Phaser from 'phaser';
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 
 interface Player {
-  id: string;
+  id: number;
   x: number;
   y: number;
   username?: string;
 }
 
 const props = defineProps<{
-  players: Map<string, Player>;
+  players: Map<number, Player>;
 }>();
 
 const emit = defineEmits<{
-  (e: 'send-join'): void;
   (e: 'send-move', x: number, y: number): void;
 }>();
 
@@ -27,7 +26,7 @@ let gameScene: GameScene | null = null;
 // TODO: 화면이랑 로직 분리
 class GameScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
-  private otherPlayers: Map<string, Phaser.Physics.Arcade.Sprite> = new Map();
+  private otherPlayers: Map<number, Phaser.Physics.Arcade.Sprite> = new Map();
 
   constructor() {
     super({ key: 'GameScene' });
@@ -105,7 +104,7 @@ class GameScene extends Phaser.Scene {
     });
   }
 
-  updateOtherPlayers(players: Map<string, Player>) {
+  updateOtherPlayers(players: Map<number, Player>) {
     // 기존 플레이어들 제거
     this.otherPlayers.forEach((sprite, playerId) => {
       if (!players.has(playerId)) {
@@ -155,8 +154,6 @@ onMounted(() => {
     setTimeout(() => {
       gameScene = game?.scene.getScene('GameScene') as GameScene;
     }, 100);
-
-    emit('send-join');
   }
 });
 
