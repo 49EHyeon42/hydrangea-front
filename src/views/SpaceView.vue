@@ -17,14 +17,14 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <v-container fluid style="height: 100vh">
-    <v-row dense style="height: 100%">
+  <v-container fluid class="h-screen">
+    <v-row dense class="fill-height">
       <v-col cols="9">
-        <div class="d-flex align-center justify-center" style="height: 100%">
+        <div class="d-flex align-center justify-center">
           <PhaserPanel :players="spaceWebSocket.players.value" @send-move="spaceWebSocket.sendMove" />
         </div>
       </v-col>
-      <v-col cols="3">
+      <v-col cols="3" class="fill-height">
         <ChatPanel :messages="spaceWebSocket.messages.value" @send-message="spaceWebSocket.sendMessage" />
       </v-col>
     </v-row>
