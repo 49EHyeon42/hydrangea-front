@@ -3,6 +3,17 @@ import { ref } from 'vue';
 
 import type { SendMessageResponse } from '@/types/message/response/SendMessageResponse';
 
+const players = ref<Map<string, Player>>(new Map());
+const myPlayerId = ref<string>('');
+
+// Player 타입 정의 필요
+interface Player {
+  id: string;
+  x: number;
+  y: number;
+  username?: string;
+}
+
 const messages = ref<SendMessageResponse[]>([]);
 
 const client = new Client({
@@ -16,10 +27,52 @@ const client = new Client({
       messages.value.push(body);
     });
 
+    // TODO: 로직 수정
     client.subscribe('/topic/space/move', (message: IMessage) => {
-      // TODO: 나중에
-      // const body = JSON.parse(message.body) as SendMessageResponse;
-      // messages.value.push(body);
+      const moveData = JSON.parse(message.body) as {
+        playerId: string;
+        x: number;
+        y: number;
+        type: 'join' | 'move' | 'leave';
+        username?: string;
+      };
+
+      // 자신의 움직임은 무시 (myPlayerId와 비교)
+      if (moveData.playerId === myPlayerId.value) {
+        return;
+      }
+
+      // 나머지 로직은 그대로...
+      if (moveData.type === 'join') {
+        players.value.set(moveData.playerId, {
+          id: moveData.playerId,
+          x: moveData.x,
+          y: moveData.y,
+          username: moveData.username,
+        });
+      } else if (moveData.type === 'move') {
+        const player = players.value.get(moveData.playerId);
+        if (player) {
+          player.x = moveData.x;
+          player.y = moveData.y;
+        }
+      } else if (moveData.type === 'leave') {
+        players.value.delete(moveData.playerId);
+      }
+    });
+
+    // TODO: refactor
+    if (!client.connected) {
+      return;
+    }
+
+    client.publish({
+      destination: '/app/space/move',
+      body: JSON.stringify({
+        x: 0,
+        y: 0,
+        type: 'join',
+      }),
     });
   },
   onStompError: (frame) => {
@@ -36,15 +89,33 @@ export const useSpaceWebSocket = () => {
     client.deactivate();
   };
 
-  const sendMove = () => {
+  const sendJoin = () => {
     if (!client.connected) {
       return;
     }
 
-    console.log('여기');
+    client.publish({
+      destination: '/app/space/move',
+      body: JSON.stringify({
+        x: 0,
+        y: 0,
+        type: 'join',
+      }),
+    });
+  };
+
+  const sendMove = (x: number, y: number) => {
+    if (!client.connected) {
+      return;
+    }
 
     client.publish({
       destination: '/app/space/move',
+      body: JSON.stringify({
+        x: x,
+        y: y,
+        type: 'move',
+      }),
     });
   };
 
@@ -63,8 +134,11 @@ export const useSpaceWebSocket = () => {
 
   return {
     messages,
+    players,
+    myPlayerId,
     connect,
     disconnect,
+    sendJoin,
     sendMove,
     sendMessage,
   };

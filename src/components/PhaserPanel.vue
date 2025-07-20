@@ -1,17 +1,33 @@
 <script setup lang="ts">
 import Phaser from 'phaser';
-import { onBeforeUnmount, onMounted, ref } from 'vue';
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
+
+interface Player {
+  id: string;
+  x: number;
+  y: number;
+  username?: string;
+}
+
+const props = defineProps<{
+  players: Map<string, Player>;
+}>();
 
 const emit = defineEmits<{
-  (e: 'send-move'): void;
+  (e: 'send-join'): void;
+  (e: 'send-move', x: number, y: number): void;
 }>();
 
 const gameContainer = ref<HTMLDivElement>();
 
 let game: Phaser.Game | null = null;
 
+let gameScene: GameScene | null = null;
+
+// TODO: 화면이랑 로직 분리
 class GameScene extends Phaser.Scene {
   private player!: Phaser.Physics.Arcade.Sprite;
+  private otherPlayers: Map<string, Phaser.Physics.Arcade.Sprite> = new Map();
 
   constructor() {
     super({ key: 'GameScene' });
@@ -49,22 +65,22 @@ class GameScene extends Phaser.Scene {
         case 'w':
         case 'arrowup':
           this.player.setVelocityY(-speed);
-          emit('send-move');
+          emit('send-move', this.player.x, this.player.y);
           break;
         case 's':
         case 'arrowdown':
           this.player.setVelocityY(speed);
-          emit('send-move');
+          emit('send-move', this.player.x, this.player.y);
           break;
         case 'a':
         case 'arrowleft':
           this.player.setVelocityX(-speed);
-          emit('send-move');
+          emit('send-move', this.player.x, this.player.y);
           break;
         case 'd':
         case 'arrowright':
           this.player.setVelocityX(speed);
-          emit('send-move');
+          emit('send-move', this.player.x, this.player.y);
           break;
       }
     });
@@ -76,21 +92,42 @@ class GameScene extends Phaser.Scene {
         case 'arrowup':
         case 'arrowdown':
           this.player.setVelocityY(0);
-          emit('send-move');
+          emit('send-move', this.player.x, this.player.y);
           break;
         case 'a':
         case 'd':
         case 'arrowleft':
         case 'arrowright':
           this.player.setVelocityX(0);
-          emit('send-move');
+          emit('send-move', this.player.x, this.player.y);
           break;
       }
     });
   }
 
-  update() {
-    // 게임 루프 업데이트 로직
+  updateOtherPlayers(players: Map<string, Player>) {
+    // 기존 플레이어들 제거
+    this.otherPlayers.forEach((sprite, playerId) => {
+      if (!players.has(playerId)) {
+        sprite.destroy();
+        this.otherPlayers.delete(playerId);
+      }
+    });
+
+    // 플레이어들 업데이트/추가
+    players.forEach((playerData, playerId) => {
+      let otherPlayer = this.otherPlayers.get(playerId);
+
+      if (!otherPlayer) {
+        // 새 플레이어 생성
+        otherPlayer = this.physics.add.sprite(playerData.x, playerData.y, 'player');
+        otherPlayer.setTint(0xff0000); // 빨간색으로 구분
+        this.otherPlayers.set(playerId, otherPlayer);
+      } else {
+        // 위치 업데이트
+        otherPlayer.setPosition(playerData.x, playerData.y);
+      }
+    });
   }
 }
 
@@ -113,8 +150,26 @@ onMounted(() => {
     };
 
     game = new Phaser.Game(config);
+
+    // 씬이 준비된 후 참조 저장
+    setTimeout(() => {
+      gameScene = game?.scene.getScene('GameScene') as GameScene;
+    }, 100);
+
+    emit('send-join');
   }
 });
+
+watch(
+  () => props.players,
+  (newPlayers) => {
+    console.log('Players updated:', newPlayers); // 디버깅용
+    if (gameScene) {
+      gameScene.updateOtherPlayers(newPlayers);
+    }
+  },
+  { deep: true },
+);
 
 onBeforeUnmount(() => {
   if (game) {
