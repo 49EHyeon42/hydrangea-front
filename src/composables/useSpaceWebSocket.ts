@@ -15,6 +15,12 @@ const client = new Client({
 
       messages.value.push(body);
     });
+
+    client.subscribe('/topic/space/move', (message: IMessage) => {
+      // TODO: 나중에
+      // const body = JSON.parse(message.body) as SendMessageResponse;
+      // messages.value.push(body);
+    });
   },
   onStompError: (frame) => {
     console.error('STOMP error:', frame);
@@ -28,6 +34,18 @@ export const useSpaceWebSocket = () => {
 
   const disconnect = () => {
     client.deactivate();
+  };
+
+  const sendMove = () => {
+    if (!client.connected) {
+      return;
+    }
+
+    console.log('여기');
+
+    client.publish({
+      destination: '/app/space/move',
+    });
   };
 
   const sendMessage = (content: string) => {
@@ -47,6 +65,7 @@ export const useSpaceWebSocket = () => {
     messages,
     connect,
     disconnect,
+    sendMove,
     sendMessage,
   };
 };

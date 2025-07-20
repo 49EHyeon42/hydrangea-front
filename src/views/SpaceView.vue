@@ -7,10 +7,6 @@ import { useSpaceWebSocket } from '@/composables/useSpaceWebSocket';
 
 const spaceWebSocket = useSpaceWebSocket();
 
-const sendMessage = (message: string) => {
-  spaceWebSocket.sendMessage(message);
-};
-
 onMounted(() => {
   spaceWebSocket.connect();
 });
@@ -25,11 +21,11 @@ onBeforeUnmount(() => {
     <v-row dense style="height: 100%">
       <v-col cols="9">
         <div class="d-flex align-center justify-center" style="height: 100%">
-          <PhaserPanel :messages="spaceWebSocket.messages.value" @send-message="sendMessage" />
+          <PhaserPanel @send-move="spaceWebSocket.sendMove" />
         </div>
       </v-col>
       <v-col cols="3">
-        <ChatPanel :messages="spaceWebSocket.messages.value" @send-message="sendMessage" />
+        <ChatPanel :messages="spaceWebSocket.messages.value" @send-message="spaceWebSocket.sendMessage" />
       </v-col>
     </v-row>
   </v-container>

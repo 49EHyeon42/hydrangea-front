@@ -2,6 +2,10 @@
 import Phaser from 'phaser';
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 
+const emit = defineEmits<{
+  (e: 'send-move'): void;
+}>();
+
 const gameContainer = ref<HTMLDivElement>();
 
 let game: Phaser.Game | null = null;
@@ -45,18 +49,22 @@ class GameScene extends Phaser.Scene {
         case 'w':
         case 'arrowup':
           this.player.setVelocityY(-speed);
+          emit('send-move');
           break;
         case 's':
         case 'arrowdown':
           this.player.setVelocityY(speed);
+          emit('send-move');
           break;
         case 'a':
         case 'arrowleft':
           this.player.setVelocityX(-speed);
+          emit('send-move');
           break;
         case 'd':
         case 'arrowright':
           this.player.setVelocityX(speed);
+          emit('send-move');
           break;
       }
     });
@@ -68,12 +76,14 @@ class GameScene extends Phaser.Scene {
         case 'arrowup':
         case 'arrowdown':
           this.player.setVelocityY(0);
+          emit('send-move');
           break;
         case 'a':
         case 'd':
         case 'arrowleft':
         case 'arrowright':
           this.player.setVelocityX(0);
+          emit('send-move');
           break;
       }
     });
