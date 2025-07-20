@@ -1,8 +1,9 @@
 import { Client, type IMessage } from '@stomp/stompjs';
 import { ref } from 'vue';
 
-import type { SendMessageResponse } from '@/types/message/response/SendMessageResponse';
-import type { JoinUserResponse } from '@/types/space/user/JoinUserResponse';
+import type { JoinUserResponse } from '@/types/space/user/joinUserResponse';
+
+import { useSpaceChatWebSocket } from './useSpaceChatWebSocket';
 
 const players = ref<Map<number, Player>>(new Map());
 const myPlayerId = ref<number>(0);
@@ -15,11 +16,9 @@ interface Player {
   username?: string;
 }
 
-// TODO: 나중에 space(player, chat)으로 분리 필요할 듯
+// TODO: 나중에 space(player, chat)으로 분리 필요할 듯 (진행 중)
 // TODO: 새로 들어왔을 때, 기존 사용자가 어디에 있는지 모름, 수정 필요
-// TODO: 컴포저블 구조 수정
-
-const messages = ref<SendMessageResponse[]>([]);
+// TODO: 컴포저블 구조 수정 (진행 중)
 
 const client = new Client({
   brokerURL: import.meta.env.VITE_WEB_SOCKET_BASE_URL,
@@ -43,11 +42,7 @@ const client = new Client({
       }
     });
 
-    client.subscribe('/topic/space/chat', (message: IMessage) => {
-      const body = JSON.parse(message.body) as SendMessageResponse;
-
-      messages.value.push(body);
-    });
+    spaceChatWebSocket.subscribe();
 
     // TODO: 로직 수정
     client.subscribe('/topic/space/move', (message: IMessage) => {
@@ -119,16 +114,11 @@ export const useSpaceWebSocket = () => {
       return;
     }
 
-    client.publish({
-      destination: '/app/space/chat',
-      body: JSON.stringify({
-        content: content,
-      }),
-    });
+    spaceChatWebSocket.sendMessage(content);
   };
 
   return {
-    messages,
+    messages: spaceChatWebSocket.messages,
     players,
     myPlayerId,
     connect,
@@ -137,3 +127,5 @@ export const useSpaceWebSocket = () => {
     sendMessage,
   };
 };
+
+const spaceChatWebSocket = useSpaceChatWebSocket(client);
