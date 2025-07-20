@@ -2,6 +2,7 @@ import type { Client, IMessage } from '@stomp/stompjs';
 import { ref } from 'vue';
 
 import type { MoveUserRequest } from '@/types/space/user/request/moveUserRequest';
+import type { JoinUserResponse } from '@/types/space/user/response/joinUserResponse';
 import type { MoveUserResponse } from '@/types/space/user/response/moveUserResponse';
 
 // Player 타입 정의 필요
@@ -18,7 +19,27 @@ export const useSpaceUserWebSocket = (client: Client) => {
   const users = ref<Map<number, Player>>(new Map());
   const myId = ref<number>(0);
 
-  const subscribe = () => {
+  const subscribeToJoinUser = () => {
+    client.subscribe('/topic/spaces/users/join', (message: IMessage) => {
+      const body = JSON.parse(message.body) as JoinUserResponse;
+
+      // TODO: 해당 부분은 백엔드에서 처리해야 함
+      // 자신의 입장이 아닌 경우만 다른 플레이어로 추가
+      if (body.userId !== myId.value) {
+        users.value.set(body.userId, {
+          id: body.userId,
+          nickname: body.userNickname,
+          x: body.initialX,
+          y: body.initialY,
+        });
+      } else {
+        // 자신의 ID 저장
+        myId.value = body.userId;
+      }
+    });
+  };
+
+  const subscribeToMoveUser = () => {
     client.subscribe('/topic/spaces/users/move', (message: IMessage) => {
       const body = JSON.parse(message.body) as MoveUserResponse;
 
@@ -40,7 +61,15 @@ export const useSpaceUserWebSocket = (client: Client) => {
     });
   };
 
-  const joinUser = () => {};
+  const joinUser = () => {
+    if (!client.connected) {
+      return;
+    }
+
+    client.publish({
+      destination: '/app/spaces/users/join',
+    });
+  };
 
   const moveUser = (x: number, y: number) => {
     if (!client.connected) {
@@ -58,11 +87,19 @@ export const useSpaceUserWebSocket = (client: Client) => {
     });
   };
 
+  const leaveUser = () => {
+    if (!client.connected) {
+      return;
+    }
+  };
+
   return {
     users,
     myId,
-    subscribe,
+    subscribeToJoinUser,
+    subscribeToMoveUser,
     joinUser,
     moveUser,
+    leaveUser,
   };
 };

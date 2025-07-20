@@ -1,6 +1,4 @@
-import { Client, type IMessage } from '@stomp/stompjs';
-
-import type { JoinUserResponse } from '@/types/space/user/joinUserResponse';
+import { Client } from '@stomp/stompjs';
 
 import { useSpaceChatWebSocket } from './useSpaceChatWebSocket';
 import { useSpaceUserWebSocket } from './useSpaceUserWebSocket';
@@ -13,34 +11,12 @@ const client = new Client({
   brokerURL: import.meta.env.VITE_WEB_SOCKET_BASE_URL,
   reconnectDelay: 5000,
   onConnect: () => {
-    // TODO: 분리
-    client.subscribe('/topic/spaces/users/join', (message: IMessage) => {
-      const body = JSON.parse(message.body) as JoinUserResponse;
-
-      // 자신의 입장이 아닌 경우만 다른 플레이어로 추가
-      if (body.userId !== spaceUserWebSocket.myId.value) {
-        spaceUserWebSocket.users.value.set(body.userId, {
-          id: body.userId,
-          nickname: body.userNickname,
-          x: body.initialX,
-          y: body.initialY,
-        });
-      } else {
-        // 자신의 ID 저장
-        spaceUserWebSocket.myId.value = body.userId;
-      }
-    });
-
-    spaceUserWebSocket.subscribe();
+    // TODO: 이 구조 다시 고민
+    spaceUserWebSocket.subscribeToJoinUser();
+    spaceUserWebSocket.subscribeToMoveUser();
     spaceChatWebSocket.subscribe();
 
-    if (!client.connected) {
-      return;
-    }
-
-    client.publish({
-      destination: '/app/spaces/users/join',
-    });
+    spaceUserWebSocket.joinUser();
   },
   onStompError: (frame) => {
     console.error('STOMP error:', frame);
