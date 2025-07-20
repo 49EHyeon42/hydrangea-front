@@ -8,7 +8,7 @@ defineProps<{
 <template>
   <div class="ma-1" style="overflow-wrap: break-word; word-break: break-word">
     <span class="mr-1">{{ nickname }}</span>
-    <span>{{ content }}</span>
+    <span class="text-pre-wrap">{{ content }}</span>
   </div>
 </template>
 
