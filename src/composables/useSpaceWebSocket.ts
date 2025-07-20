@@ -1,20 +1,9 @@
 import { Client, type IMessage } from '@stomp/stompjs';
-import { ref } from 'vue';
 
 import type { JoinUserResponse } from '@/types/space/user/joinUserResponse';
 
 import { useSpaceChatWebSocket } from './useSpaceChatWebSocket';
-
-const players = ref<Map<number, Player>>(new Map());
-const myPlayerId = ref<number>(0);
-
-// Player 타입 정의 필요
-interface Player {
-  id: number;
-  x: number;
-  y: number;
-  username?: string;
-}
+import { useSpaceUserWebSocket } from './useSpaceUserWebSocket';
 
 // TODO: 나중에 space(player, chat)으로 분리 필요할 듯 (진행 중)
 // TODO: 새로 들어왔을 때, 기존 사용자가 어디에 있는지 모름, 수정 필요
@@ -24,53 +13,26 @@ const client = new Client({
   brokerURL: import.meta.env.VITE_WEB_SOCKET_BASE_URL,
   reconnectDelay: 5000,
   onConnect: () => {
-    // 내부 함수로 분리 안되나?
+    // TODO: 분리
     client.subscribe('/topic/spaces/users/join', (message: IMessage) => {
       const body = JSON.parse(message.body) as JoinUserResponse;
 
       // 자신의 입장이 아닌 경우만 다른 플레이어로 추가
-      if (body.userId !== myPlayerId.value) {
-        players.value.set(body.userId, {
+      if (body.userId !== spaceUserWebSocket.myId.value) {
+        spaceUserWebSocket.users.value.set(body.userId, {
           id: body.userId,
+          nickname: body.userNickname,
           x: body.initialX,
           y: body.initialY,
-          username: body.userNickname,
         });
       } else {
         // 자신의 ID 저장
-        myPlayerId.value = body.userId;
+        spaceUserWebSocket.myId.value = body.userId;
       }
     });
 
+    spaceUserWebSocket.subscribe();
     spaceChatWebSocket.subscribe();
-
-    // TODO: 로직 수정
-    client.subscribe('/topic/space/move', (message: IMessage) => {
-      const moveData = JSON.parse(message.body) as {
-        playerId: string;
-        x: number;
-        y: number;
-        type: 'move' | 'leave';
-        username?: string;
-      };
-
-      // 자신의 움직임은 무시 (myPlayerId와 비교)
-      // 임시 조치
-      if (moveData.playerId === myPlayerId.value.toString()) {
-        return;
-      }
-
-      if (moveData.type === 'move') {
-        // 임시 조치
-        const player = players.value.get(Number(moveData.playerId));
-        if (player) {
-          player.x = moveData.x;
-          player.y = moveData.y;
-        }
-      } else if (moveData.type === 'leave') {
-        players.value.delete(Number(moveData.playerId));
-      }
-    });
 
     if (!client.connected) {
       return;
@@ -99,14 +61,7 @@ export const useSpaceWebSocket = () => {
       return;
     }
 
-    client.publish({
-      destination: '/app/space/move',
-      body: JSON.stringify({
-        x: x,
-        y: y,
-        type: 'move',
-      }),
-    });
+    spaceUserWebSocket.moveUser(x, y);
   };
 
   const sendMessage = (content: string) => {
@@ -119,8 +74,8 @@ export const useSpaceWebSocket = () => {
 
   return {
     messages: spaceChatWebSocket.messages,
-    players,
-    myPlayerId,
+    players: spaceUserWebSocket.users,
+    myPlayerId: spaceUserWebSocket.myId,
     connect,
     disconnect,
     sendMove,
@@ -128,4 +83,5 @@ export const useSpaceWebSocket = () => {
   };
 };
 
+const spaceUserWebSocket = useSpaceUserWebSocket(client);
 const spaceChatWebSocket = useSpaceChatWebSocket(client);
