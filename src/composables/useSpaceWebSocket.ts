@@ -14,6 +14,9 @@ interface Player {
   username?: string;
 }
 
+// TODO: 나중에 space(player, chat)으로 분리 필요할 듯
+// TODO: 새로 들어왔을 때, 기존 사용자가 어디에 있는지 모름, 수정 필요
+
 const messages = ref<SendMessageResponse[]>([]);
 
 const client = new Client({
@@ -21,6 +24,28 @@ const client = new Client({
   brokerURL: 'ws://localhost:8080/ws',
   reconnectDelay: 5000,
   onConnect: () => {
+    client.subscribe('/topic/space/join', (message: IMessage) => {
+      const joinData = JSON.parse(message.body) as {
+        playerId: string;
+        username: string;
+        x: number;
+        y: number;
+      };
+
+      // 자신의 입장이 아닌 경우만 다른 플레이어로 추가
+      if (joinData.playerId !== myPlayerId.value) {
+        players.value.set(joinData.playerId, {
+          id: joinData.playerId,
+          x: joinData.x,
+          y: joinData.y,
+          username: joinData.username,
+        });
+      } else {
+        // 자신의 ID 저장
+        myPlayerId.value = joinData.playerId;
+      }
+    });
+
     client.subscribe('/topic/space/chat', (message: IMessage) => {
       const body = JSON.parse(message.body) as SendMessageResponse;
 
@@ -33,7 +58,7 @@ const client = new Client({
         playerId: string;
         x: number;
         y: number;
-        type: 'join' | 'move' | 'leave';
+        type: 'move' | 'leave';
         username?: string;
       };
 
@@ -42,15 +67,7 @@ const client = new Client({
         return;
       }
 
-      // 나머지 로직은 그대로...
-      if (moveData.type === 'join') {
-        players.value.set(moveData.playerId, {
-          id: moveData.playerId,
-          x: moveData.x,
-          y: moveData.y,
-          username: moveData.username,
-        });
-      } else if (moveData.type === 'move') {
+      if (moveData.type === 'move') {
         const player = players.value.get(moveData.playerId);
         if (player) {
           player.x = moveData.x;
@@ -61,18 +78,12 @@ const client = new Client({
       }
     });
 
-    // TODO: refactor
     if (!client.connected) {
       return;
     }
 
     client.publish({
-      destination: '/app/space/move',
-      body: JSON.stringify({
-        x: 0,
-        y: 0,
-        type: 'join',
-      }),
+      destination: '/app/space/join',
     });
   },
   onStompError: (frame) => {
@@ -89,6 +100,7 @@ export const useSpaceWebSocket = () => {
     client.deactivate();
   };
 
+  // 안쓰는 중
   const sendJoin = () => {
     if (!client.connected) {
       return;
