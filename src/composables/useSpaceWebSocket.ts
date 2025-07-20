@@ -22,14 +22,11 @@ interface Player {
 const messages = ref<SendMessageResponse[]>([]);
 
 const client = new Client({
-  // brokerURL, reconnectDelay 환경 변수로 분리
-  brokerURL: 'ws://localhost:8080/ws',
+  brokerURL: import.meta.env.VITE_WEB_SOCKET_BASE_URL,
   reconnectDelay: 5000,
   onConnect: () => {
     // 내부 함수로 분리 안되나?
     client.subscribe('/topic/spaces/users/join', (message: IMessage) => {
-      console.log('누가 접속?');
-
       const body = JSON.parse(message.body) as JoinUserResponse;
 
       // 자신의 입장이 아닌 경우만 다른 플레이어로 추가

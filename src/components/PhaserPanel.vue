@@ -160,7 +160,6 @@ onMounted(() => {
 watch(
   () => props.players,
   (newPlayers) => {
-    console.log('Players updated:', newPlayers); // 디버깅용
     if (gameScene) {
       gameScene.updateOtherPlayers(newPlayers);
     }
