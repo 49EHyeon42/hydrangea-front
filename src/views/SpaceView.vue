@@ -2,7 +2,6 @@
 import { onBeforeUnmount, onMounted } from 'vue';
 
 import ChatPanel from '@/components/ChatPanel.vue';
-import PhaserPanel from '@/components/PhaserPanel.vue';
 import { useSpaceWebSocket } from '@/composables/useSpaceWebSocket';
 
 const spaceWebSocket = useSpaceWebSocket();
@@ -21,7 +20,7 @@ onBeforeUnmount(() => {
     <v-row dense class="fill-height">
       <v-col cols="9">
         <div class="d-flex align-center justify-center">
-          <PhaserPanel :players="spaceWebSocket.users.value" @send-move="spaceWebSocket.moveUser" />
+          <h1>준비 중</h1>
         </div>
       </v-col>
       <v-col cols="3" class="fill-height">
