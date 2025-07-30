@@ -1,11 +1,16 @@
 <template>
-  <div ref="kakao-map" class="w-100 h-100"></div>
+  <div v-if="showKakaoMap" ref="kakao-map" class="w-100 h-100"></div>
+  <div v-else class="d-flex align-center justify-center w-100 h-100">
+    <h1>위치 권한이 필요합니다</h1>
+  </div>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, useTemplateRef } from 'vue';
+import { nextTick, onBeforeUnmount, onMounted, ref, useTemplateRef } from 'vue';
 
 const kakaoMapTr = useTemplateRef<HTMLDivElement>('kakao-map');
+
+const showKakaoMap = ref<boolean>(false);
 
 const loadKakaoScript = (): Promise<void> => {
   return new Promise((resolve, reject) => {
@@ -38,6 +43,36 @@ onMounted(async () => {
 
     new window.kakao.maps.Map(kakaoMapTr.value, mapOption);
   });
+
+  navigator.geolocation.getCurrentPosition(
+    async (position) => {
+      showKakaoMap.value = true;
+
+      await loadKakaoScript();
+
+      window.kakao.maps.load(async () => {
+        await nextTick();
+
+        if (!kakaoMapTr.value) {
+          return;
+        }
+
+        const kakaoMap = new window.kakao.maps.Map(kakaoMapTr.value, {
+          center: new window.kakao.maps.LatLng(position.coords.latitude, position.coords.longitude),
+          level: 3,
+        });
+
+        // 현재 위치 마커 생성
+        new window.kakao.maps.Marker({
+          map: kakaoMap,
+          position: new window.kakao.maps.LatLng(position.coords.latitude, position.coords.longitude),
+        });
+      });
+    },
+    () => {
+      showKakaoMap.value = false;
+    },
+  );
 });
 
 onBeforeUnmount(() => {

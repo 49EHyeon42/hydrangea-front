@@ -21,6 +21,17 @@ declare global {
       class Map {
         constructor(container: HTMLElement, options: MapOptions);
       }
+
+      interface MarkerOptions {
+        map: Map;
+        position: LatLng;
+      }
+
+      class Marker {
+        constructor(options: MarkerOptions);
+        setMap(map: Map | null): void;
+        setPosition(position: LatLng): void;
+      }
     }
   }
 }
